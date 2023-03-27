@@ -2,6 +2,7 @@ Thank you for downloading oobabooga/text-generation-webui.
 Here is how to get it up and running:
 
 1. Run the "install" script to install the web UI and its requirements in this folder.
+   Run the "install-with-powershell" script to install the web UI using Powershell.
 2. Run the "download" script to download a model of your choice. Change TextOnly variable at top of script to download only config files.
 3. Run the "start-webui" script to launch the web UI.
 
