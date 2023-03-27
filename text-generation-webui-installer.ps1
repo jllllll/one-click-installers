@@ -69,16 +69,19 @@ if ($gpuChoice -eq 'A')
 {
 	# download gptq and compile locally and if compile fails, install from wheel
 	if (!(Test-Path '.\repositories')) {mkdir 'repositories' > $null}
-	if (!(Test-Path '.\repositories\GPTQ-for-LLaMa')) {git clone $gptqRepoUrl '.\repositories\GPTQ-for-LLaMa'}
-	pushd '.\repositories\GPTQ-for-LLaMa'
-	python -m pip install -r requirements.txt
-	python setup_cuda.py install
-	if (!(Test-Path "$installerEnvDir\lib\site-packages\quant_cuda-0.0.0-py3.10-win-amd64.egg"))
+	if (!(Test-Path '.\repositories\GPTQ-for-LLaMa'))
 	{
-		Write-Warning 'CUDA kernal compilation failed. Will try to install from wheel.'
-		Invoke-RestMethod $gptqBackupWheel -OutFile 'quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'
-		python -m pip install 'quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'; if ($LASTEXITCODE -ne 0) {Write-Error 'Wheel installation failed.';pause;exit}
-		popd
+		git clone $gptqRepoUrl '.\repositories\GPTQ-for-LLaMa'
+		pushd '.\repositories\GPTQ-for-LLaMa'
+		python -m pip install -r requirements.txt
+		python setup_cuda.py install
+		if (!(Test-Path "$installerEnvDir\lib\site-packages\quant_cuda-0.0.0-py3.10-win-amd64.egg"))
+		{
+			Write-Warning 'CUDA kernal compilation failed. Will try to install from wheel.'
+			Invoke-RestMethod $gptqBackupWheel -OutFile 'quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'
+			python -m pip install 'quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'; if ($LASTEXITCODE -ne 0) {Write-Error 'Wheel installation failed.';pause;exit}
+			popd
+		}
 	}
 }
 cd ..
