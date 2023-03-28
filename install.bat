@@ -17,7 +17,7 @@ if /I "%gpuchoice%" == "A" (
   set "PACKAGES_TO_INSTALL=torchvision torchaudio pytorch-cuda=11.7 cuda-toolkit conda-forge::ninja conda-forge::git"
   set "CHANNEL=-c pytorch -c nvidia/label/cuda-11.7.0 -c nvidia"
 ) else if /I "%gpuchoice%" == "B" (
-  set "PACKAGES_TO_INSTALL=pytorch torchvision torchaudio cpuonly"
+  set "PACKAGES_TO_INSTALL=pytorch torchvision torchaudio cpuonly git"
   set "CHANNEL=-c conda-forge -c pytorch"
 ) else (
   echo Invalid choice. Exiting...
