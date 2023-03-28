@@ -1,7 +1,7 @@
 @echo off
 
 @rem Based on the installer found here: https://github.com/Sygil-Dev/sygil-webui
-@rem This script will install git and all dependencies
+@rem This script will install conda and git with all dependencies for this project
 @rem using micromamba (an 8mb static-linked single-file binary, conda replacement).
 @rem This enables a user to install this project without manually installing conda and git.
 
@@ -14,58 +14,52 @@ set /p "gpuchoice=Input> "
 set gpuchoice=%gpuchoice:~0,1%
 
 if /I "%gpuchoice%" == "A" (
-    set "PACKAGES_TO_INSTALL=python=3.10.9 torchvision torchaudio pytorch-cuda=11.7 cuda-toolkit conda-forge::ninja conda-forge::git"
-    set "CHANNEL=-c pytorch -c nvidia/label/cuda-11.7.0 -c nvidia"
+  set "PACKAGES_TO_INSTALL=torchvision torchaudio pytorch-cuda=11.7 cuda-toolkit conda-forge::ninja conda-forge::git"
+  set "CHANNEL=-c pytorch -c nvidia/label/cuda-11.7.0 -c nvidia"
 ) else if /I "%gpuchoice%" == "B" (
-    set "PACKAGES_TO_INSTALL=pytorch torchvision torchaudio cpuonly git"
-    set "CHANNEL=-c conda-forge -c pytorch"
+  set "PACKAGES_TO_INSTALL=pytorch torchvision torchaudio cpuonly"
+  set "CHANNEL=-c conda-forge -c pytorch"
 ) else (
-    echo Invalid choice. Exiting...
-    exit
+  echo Invalid choice. Exiting...
+  exit
 )
 
 cd /D "%~dp0"
 
 set PATH=%SystemRoot%\system32;%PATH%
 
+set PYTHON_VERSION=3.10.9
 set MAMBA_ROOT_PREFIX=%cd%\installer_files\mamba
 set INSTALL_ENV_DIR=%cd%\installer_files\env
 set MICROMAMBA_DOWNLOAD_URL=https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
 set REPO_URL=https://github.com/oobabooga/text-generation-webui.git
-set umamba_exists=F
 
-@rem figure out whether git and conda needs to be installed
-call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version >nul 2>&1
-if "%ERRORLEVEL%" EQU "0" set umamba_exists=T
+if not exist "%INSTALL_ENV_DIR%" (
+  @rem download micromamba
+  echo "Downloading Micromamba from %MICROMAMBA_DOWNLOAD_URL% to %MAMBA_ROOT_PREFIX%\micromamba.exe"
+  mkdir "%MAMBA_ROOT_PREFIX%"
+  call curl -L "%MICROMAMBA_DOWNLOAD_URL%" > "%MAMBA_ROOT_PREFIX%\micromamba.exe"
 
-@rem (if necessary) install git and conda into a contained environment
-if "%PACKAGES_TO_INSTALL%" NEQ "" (
-    @rem download micromamba
-    if "%umamba_exists%" == "F" (
-        echo "Downloading Micromamba from %MICROMAMBA_DOWNLOAD_URL% to %MAMBA_ROOT_PREFIX%\micromamba.exe"
+  @rem test the mamba binary
+  echo Micromamba version:
+  call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version || ( echo Micromamba not found. && goto end )
 
-        mkdir "%MAMBA_ROOT_PREFIX%"
-        call curl -L "%MICROMAMBA_DOWNLOAD_URL%" > "%MAMBA_ROOT_PREFIX%\micromamba.exe"
-
-        @rem test the mamba binary
-        echo Micromamba version:
-        call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version || ( echo Micromamba not found. && goto end )
-    )
-
-    @rem create micromamba hook
-    if not exist "%MAMBA_ROOT_PREFIX%\condabin\micromamba.bat" (
-      call "%MAMBA_ROOT_PREFIX%\micromamba.exe" shell hook >nul 2>&1
-    )
-
-    @rem create the installer env
-    if not exist "%INSTALL_ENV_DIR%" (
-      echo Packages to install: %PACKAGES_TO_INSTALL%
-      call "%MAMBA_ROOT_PREFIX%\micromamba.exe" create -y --prefix "%INSTALL_ENV_DIR%" %CHANNEL% %PACKAGES_TO_INSTALL%
-    )
+  @rem create the installer env and install conda into it
+  call "%MAMBA_ROOT_PREFIX%\micromamba.exe" create -y --always-copy --prefix "%INSTALL_ENV_DIR%" -c main conda "python=%PYTHON_VERSION%"
+  echo. && echo Removing Micromamba && echo.
+  del /q /s "%MAMBA_ROOT_PREFIX%" >nul
+  rd /q /s "%MAMBA_ROOT_PREFIX%" >nul
+  if not exist "%INSTALL_ENV_DIR%\condabin\conda.bat" ( echo Conda install failed. && goto end )
 )
 
 @rem activate installer env
-call "%MAMBA_ROOT_PREFIX%\condabin\micromamba.bat" activate "%INSTALL_ENV_DIR%" || ( echo MicroMamba hook not found. && goto end )
+call "%INSTALL_ENV_DIR%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%" || ( echo Conda activation failed. && goto end )
+
+@rem install dependencies using conda
+if not exist "%INSTALL_ENV_DIR%\bin\nvcc.exe" (
+  echo Packages to install: %PACKAGES_TO_INSTALL%
+  call conda install -y %CHANNEL% %PACKAGES_TO_INSTALL%
+)
 
 @rem clone the repository and install the pip requirements
 if exist text-generation-webui\ (
