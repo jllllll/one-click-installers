@@ -56,7 +56,7 @@ if not exist "%INSTALL_ENV_DIR%" (
 call "%INSTALL_ENV_DIR%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%" || ( echo Conda activation failed. && goto end )
 
 @rem install dependencies using conda
-if not exist "%INSTALL_ENV_DIR%\bin\nvcc.exe" (
+if not exist "%INSTALL_ENV_DIR%\Library\git-cmd.exe" (
   echo Packages to install: %PACKAGES_TO_INSTALL%
   call conda install -y %CHANNEL% %PACKAGES_TO_INSTALL%
 )
