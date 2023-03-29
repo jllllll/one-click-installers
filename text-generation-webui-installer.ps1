@@ -4,7 +4,7 @@ This enables a user to install this project without manually installing conda an
 
 $env:MAMBA_ROOT_PREFIX= "$PSScriptRoot\installer_files\mamba"
 $installerEnvDir = "$PSScriptRoot\installer_files\env"
-$micromambaDownloadUrl = 'https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64'
+$micromambaDownloadUrl = 'https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64'
 $webuiRepoUrl = 'https://github.com/oobabooga/text-generation-webui.git'
 $gptqRepoUrl = 'https://github.com/qwopqwop200/GPTQ-for-LLaMa.git'
 $gptqBackupWheel = 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl' # Not guaranteed to work!
