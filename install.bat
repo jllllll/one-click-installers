@@ -31,7 +31,7 @@ set PATH=%SystemRoot%\system32;%PATH%
 set PYTHON_VERSION=3.10.9
 set MAMBA_ROOT_PREFIX=%cd%\installer_files\mamba
 set INSTALL_ENV_DIR=%cd%\installer_files\env
-set MICROMAMBA_DOWNLOAD_URL=https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
+set MICROMAMBA_DOWNLOAD_URL=https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64
 set REPO_URL=https://github.com/oobabooga/text-generation-webui.git
 
 if not exist "%INSTALL_ENV_DIR%" (
