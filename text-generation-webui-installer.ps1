@@ -71,7 +71,7 @@ if ($gpuChoice -eq 'A')
 	if (!(Test-Path '.\repositories')) {mkdir 'repositories' > $null}
 	if (!(Test-Path '.\repositories\GPTQ-for-LLaMa'))
 	{
-		git clone $gptqRepoUrl '.\repositories\GPTQ-for-LLaMa'
+		git clone $gptqRepoUrl '.\repositories\GPTQ-for-LLaMa' -b cuda
 		pushd '.\repositories\GPTQ-for-LLaMa'
 		python -m pip install -r requirements.txt
 		python setup_cuda.py install
