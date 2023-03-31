@@ -1,5 +1,8 @@
 @echo off
 
+echo WARNING: This script relies on Micromamba and Conda which may have issues on some systems when installed under a path with spaces.
+echo          May also have issues with long paths.&& echo.
+
 @rem Based on the installer found here: https://github.com/Sygil-Dev/sygil-webui
 @rem This script will install conda and git with all dependencies for this project
 @rem using micromamba (an 8mb static-linked single-file binary, conda replacement).
