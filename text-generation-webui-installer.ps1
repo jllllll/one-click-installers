@@ -2,6 +2,11 @@
 using micromamba (an 8mb static-linked single-file binary, conda replacement).
 This enables a user to install this project without manually installing conda and git. #>
 
+Write-Warning '
+This script relies on Micromamba which may have issues on some systems when installed under a path with spaces.
+May also have issues with long paths.
+'
+
 $env:MAMBA_ROOT_PREFIX= "$PSScriptRoot\installer_files\mamba"
 $installerEnvDir = "$PSScriptRoot\installer_files\env"
 $micromambaDownloadUrl = 'https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64'
