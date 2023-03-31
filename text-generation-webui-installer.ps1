@@ -11,6 +11,7 @@ $env:MAMBA_ROOT_PREFIX= "$PSScriptRoot\installer_files\mamba"
 $installerEnvDir = "$PSScriptRoot\installer_files\env"
 $micromambaDownloadUrl = 'https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64'
 $webuiRepoUrl = 'https://github.com/oobabooga/text-generation-webui.git'
+$bitsandbytesWindowsWheel = 'https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.37.2-py3-none-any.whl'
 $gptqRepoUrl = 'https://github.com/qwopqwop200/GPTQ-for-LLaMa.git'
 $gptqBackupWheel = 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl' # Not guaranteed to work!
 
@@ -60,7 +61,12 @@ if (!(Test-Path ($installerEnvDir + '\python.exe')))
 if (Test-Path ($installerEnvDir + '\python.exe')) {micromamba activate $installerEnvDir}
 
 # clone the repository and install the pip requirements
-if (!(Test-Path "$PSScriptRoot\text-generation-webui")) {git clone $webuiRepoUrl "$PSScriptRoot\text-generation-webui"; cd "$PSScriptRoot\text-generation-webui"}
+if (!(Test-Path "$PSScriptRoot\text-generation-webui"))
+{
+	git clone $webuiRepoUrl "$PSScriptRoot\text-generation-webui"
+	python -m pip install $bitsandbytesWindowsWheel
+	cd "$PSScriptRoot\text-generation-webui"
+}
 else {cd "$PSScriptRoot\text-generation-webui"; git pull}
 python -m pip install -r requirements.txt --upgrade
 python -m pip install -r extensions\api\requirements.txt --upgrade
@@ -77,23 +83,15 @@ if ($gpuChoice -eq 'A')
 	if (!(Test-Path '.\repositories\GPTQ-for-LLaMa'))
 	{
 		git clone $gptqRepoUrl '.\repositories\GPTQ-for-LLaMa' -b cuda
-		pushd '.\repositories\GPTQ-for-LLaMa'
+		cd '.\repositories\GPTQ-for-LLaMa'
 		python -m pip install -r requirements.txt
 		python setup_cuda.py install
 		if (!(Test-Path "$installerEnvDir\lib\site-packages\quant_cuda-0.0.0-py3.10-win-amd64.egg"))
 		{
 			Write-Warning 'CUDA kernal compilation failed. Will try to install from wheel.'
-			Invoke-RestMethod $gptqBackupWheel -OutFile 'quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'
-			python -m pip install 'quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'; if ($LASTEXITCODE -ne 0) {Write-Error 'Wheel installation failed.';pause;exit}
-			popd
+			python -m pip install $gptqBackupWheel; if ($LASTEXITCODE -ne 0) {Write-Error 'Wheel installation failed.';pause;exit}
 		}
 	}
 }
-cd ..
-
-Invoke-RestMethod 'https://github.com/DeXtmL/bitsandbytes-win-prebuilt/raw/main/libbitsandbytes_cpu.dll' -OutFile "$installerEnvDir\lib\site-packages\bitsandbytes\libbitsandbytes_cpu.dll"
-Invoke-RestMethod 'https://github.com/james-things/bitsandbytes-prebuilt-all_arch/raw/main/0.37.0/libbitsandbytes_cudaall.dll' -OutFile "$installerEnvDir\lib\site-packages\bitsandbytes\libbitsandbytes_cudaall.dll"
-sed -i "s/if not torch.cuda.is_available(): return 'libsbitsandbytes_cpu.so', None, None, None, None/if torch.cuda.is_available(): return 'libbitsandbytes_cudaall.dll', None, None, None, None\n    else: return 'libbitsandbytes_cpu.dll', None, None, None, None/g" "$installerEnvDir\lib\site-packages\bitsandbytes\cuda_setup\main.py"
-sed -i "s/ct.cdll.LoadLibrary(binary_path)/ct.cdll.LoadLibrary(str(binary_path))/g" "$installerEnvDir\lib\site-packages\bitsandbytes\cuda_setup\main.py"
 
 pause
