@@ -12,7 +12,7 @@ $installerEnvDir = "$PSScriptRoot\installer_files\env"
 $micromambaDownloadUrl = 'https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64'
 $webuiRepoUrl = 'https://github.com/oobabooga/text-generation-webui.git'
 $bitsandbytesWindowsWheel = 'https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.37.2-py3-none-any.whl'
-$gptqRepoUrl = 'https://github.com/qwopqwop200/GPTQ-for-LLaMa.git'
+$gptqRepoUrl = 'https://github.com/oobabooga/GPTQ-for-LLaMa.git'
 $gptqBackupWheel = 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl' # Not guaranteed to work!
 
 
