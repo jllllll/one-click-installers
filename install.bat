@@ -45,18 +45,18 @@ if not exist "%INSTALL_ENV_DIR%" (
 
   @rem test the mamba binary
   echo Micromamba version:
-  call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version || ( echo Micromamba not found. && goto end )
+  call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version || ( echo. && echo Micromamba not found. && goto end )
 
   @rem create the installer env and install conda into it
   call "%MAMBA_ROOT_PREFIX%\micromamba.exe" create -y --always-copy --prefix "%INSTALL_ENV_DIR%" -c main conda "python=%PYTHON_VERSION%"
   echo. && echo Removing Micromamba && echo.
   del /q /s "%MAMBA_ROOT_PREFIX%" >nul
   rd /q /s "%MAMBA_ROOT_PREFIX%" >nul
-  if not exist "%INSTALL_ENV_DIR%\condabin\conda.bat" ( echo Conda install failed. && goto end )
+  if not exist "%INSTALL_ENV_DIR%\condabin\conda.bat" ( echo. && echo Conda install failed. && goto end )
 )
 
 @rem activate installer env
-call "%INSTALL_ENV_DIR%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%" || ( echo Conda activation failed. && goto end )
+call "%INSTALL_ENV_DIR%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%" || ( echo. && echo Conda activation failed. && goto end )
 
 @rem install dependencies using conda
 if not exist "%INSTALL_ENV_DIR%\Library\git-cmd.exe" (
@@ -95,7 +95,7 @@ if not exist GPTQ-for-LLaMa\ (
   call python setup_cuda.py install
   if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda-0.0.0-py3.10-win-amd64.egg" (
     echo CUDA kernal compilation failed. Will try to install from wheel.
-    call python -m pip install https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl || ( echo Wheel installation failed. && goto end )
+    call python -m pip install https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl || ( echo. && echo Wheel installation failed. && goto end )
   )
 )
 
