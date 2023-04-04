@@ -59,6 +59,7 @@ if (!(Test-Path ($installerEnvDir + '\python.exe')))
 
 # activate installer env
 if (Test-Path ($installerEnvDir + '\python.exe')) {micromamba activate $installerEnvDir}
+else {Write-Error 'Conda environment is empty.';pause;exit}
 
 # clone the repository and install the pip requirements
 if (!(Test-Path "$PSScriptRoot\text-generation-webui"))
