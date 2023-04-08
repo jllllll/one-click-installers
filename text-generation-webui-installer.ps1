@@ -35,8 +35,8 @@ switch ($gpuChoice)
 	}
 
 	'B' {
-		$packages = 'pytorch torchvision torchaudio cpuonly git'
-		$packageChannels = '-c conda-forge -c pytorch'
+		$packages = 'pytorch','torchvision','torchaudio','cpuonly','git'
+		$packageChannels = '-c conda-forge','-c pytorch'
 	}
 }
 
@@ -54,7 +54,7 @@ if (!(Test-Path $micromambaExe)) {Write-Error 'Unable to download micromamba.';p
 # create the installer env
 if (!(Test-Path ($installerEnvDir + '\python.exe')))
 {
-	micromamba create -y --prefix $installerEnvDir $packageChannels.split() $packages
+	micromamba create -y --prefix $installerEnvDir $packageChannels $packages
 }
 
 # activate installer env
