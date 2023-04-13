@@ -48,7 +48,7 @@ if not exist "%INSTALL_ENV_DIR%" (
   call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version || ( echo. && echo Micromamba not found. && goto end )
 
   @rem create the installer env and install conda into it
-  call "%MAMBA_ROOT_PREFIX%\micromamba.exe" create -y --always-copy --prefix "%INSTALL_ENV_DIR%" -c main conda "python=%PYTHON_VERSION%"
+  call "%MAMBA_ROOT_PREFIX%\micromamba.exe" create -y --no-shortcuts --always-copy --prefix "%INSTALL_ENV_DIR%" -c main conda "python=%PYTHON_VERSION%"
   echo. && echo Removing Micromamba && echo.
   del /q /s "%MAMBA_ROOT_PREFIX%" >nul
   rd /q /s "%MAMBA_ROOT_PREFIX%" >nul
