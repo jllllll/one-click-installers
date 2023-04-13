@@ -54,7 +54,7 @@ if (!(Test-Path $micromambaExe)) {Write-Error 'Unable to download micromamba.';p
 # create the installer env
 if (!(Test-Path ($installerEnvDir + '\python.exe')))
 {
-	micromamba create -y --prefix $installerEnvDir $packageChannels $packages
+	micromamba create -y --no-shortcuts --prefix $installerEnvDir $packageChannels $packages
 }
 
 # activate installer env
