@@ -33,11 +33,13 @@ cd /D "%~dp0"
 SET "CONDA_SHLVL="
 SET PYTHONNOUSERSITE=1
 SET "PYTHONPATH="
+SET "TEMP=%cd%\installer_files\temp"
+SET "TMP=%cd%\installer_files\temp"
 
 @rem workaround for broken Windows installs
 set PATH=%PATH%;%SystemRoot%\system32
 
-set PYTHON_VERSION=3.10.9
+set PYTHON_VERSION=3.10
 set MAMBA_ROOT_PREFIX=%cd%\installer_files\mamba
 set INSTALL_ENV_DIR=%cd%\installer_files\env
 set MICROMAMBA_DOWNLOAD_URL=https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64

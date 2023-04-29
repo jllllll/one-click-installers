@@ -8,6 +8,8 @@ cd /D "%~dp0"
 SET "CONDA_SHLVL="
 SET PYTHONNOUSERSITE=1
 SET "PYTHONPATH="
+SET "TEMP=%cd%\installer_files\temp"
+SET "TMP=%cd%\installer_files\temp"
 
 @rem workaround for broken Windows installs
 set PATH=%PATH%;%SystemRoot%\system32
@@ -22,7 +24,7 @@ set "CUDA_PATH=%INSTALL_ENV_DIR%"
 
 cd text-generation-webui
 
-call python server.py --auto-devices --cai-chat
+call python server.py --auto-devices --chat --model-menu
 
 :end
 pause

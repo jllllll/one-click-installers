@@ -8,6 +8,8 @@ cd /D "%~dp0"
 SET "CONDA_SHLVL="
 SET PYTHONNOUSERSITE=1
 SET "PYTHONPATH="
+SET "TEMP=%cd%\installer_files\temp"
+SET "TMP=%cd%\installer_files\temp"
 
 @rem workaround for broken Windows installs
 set PATH=%PATH%;%SystemRoot%\system32
