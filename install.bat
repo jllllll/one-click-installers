@@ -29,6 +29,12 @@ if /I "%gpuchoice%" == "A" (
   exit
 )
 
+@rem better isolation for virtual environment
+SET "CONDA_SHLVL="
+SET PYTHONNOUSERSITE=1
+SET "PYTHONPATH="
+
+@rem workaround for broken Windows installs
 set PATH=%PATH%;%SystemRoot%\system32
 
 set MINICONDA_DIR=%cd%\installer_files\miniconda3
