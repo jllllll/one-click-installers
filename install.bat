@@ -29,6 +29,12 @@ if /I "%gpuchoice%" == "A" (
 
 cd /D "%~dp0"
 
+@rem better isolation for virtual environment
+SET "CONDA_SHLVL="
+SET PYTHONNOUSERSITE=1
+SET "PYTHONPATH="
+
+@rem workaround for broken Windows installs
 set PATH=%PATH%;%SystemRoot%\system32
 
 set PYTHON_VERSION=3.10.9
@@ -64,13 +70,16 @@ if not exist "%INSTALL_ENV_DIR%\Library\git-cmd.exe" (
   call conda install -y %CHANNEL% %PACKAGES_TO_INSTALL%
 )
 
+@rem set default cuda toolkit to the one in the environment
+set "CUDA_PATH=%INSTALL_ENV_DIR%"
+
 @rem clone the repository and install the pip requirements
 if exist text-generation-webui\ (
   cd text-generation-webui
   git pull
 ) else (
   git clone https://github.com/oobabooga/text-generation-webui.git
-  call python -m pip install https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.37.2-py3-none-any.whl
+  call python -m pip install https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.38.1-py3-none-any.whl
   cd text-generation-webui || goto end
 )
 call python -m pip install -r requirements.txt --upgrade
@@ -81,7 +90,7 @@ call python -m pip install -r extensions\silero_tts\requirements.txt --upgrade
 call python -m pip install -r extensions\whisper_stt\requirements.txt --upgrade
 
 @rem skip gptq install if cpu only
-if /I not "%gpuchoice%" == "A" goto bandaid
+if /I not "%gpuchoice%" == "A" goto end
 
 @rem download gptq and compile locally and if compile fails, install from wheel
 if not exist repositories\ (
@@ -90,13 +99,22 @@ if not exist repositories\ (
 cd repositories || goto end
 if not exist GPTQ-for-LLaMa\ (
   git clone https://github.com/oobabooga/GPTQ-for-LLaMa.git -b cuda
-  cd GPTQ-for-LLaMa || goto end
-  call python -m pip install -r requirements.txt
-  call python setup_cuda.py install
-  if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda-0.0.0-py3.10-win-amd64.egg" (
-    echo CUDA kernal compilation failed. Will try to install from wheel.
-    call python -m pip install https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl || ( echo. && echo Wheel installation failed. && goto end )
-  )
+)
+
+cd GPTQ-for-LLaMa || goto end
+call python -m pip install -r requirements.txt
+if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda*" (
+  @rem change from deprecated install method  python setup_cuda.py install
+  cp setup_cuda.py setup.py
+  call python -m pip install .
+)
+if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda*" (
+  echo. && echo CUDA kernel compilation failed. Will try to install from wheel.&& echo.
+  
+  @rem workaround for python bug
+  cd ..
+
+  call python -m pip install https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl || ( echo. && echo Wheel installation failed. && goto end )
 )
 
 :end
