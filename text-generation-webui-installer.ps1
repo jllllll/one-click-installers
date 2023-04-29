@@ -20,6 +20,8 @@ $gptqBackupWheel = 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/qu
 $env:CONDA_SHLVL = ''
 $env:PYTHONNOUSERSITE = 1
 $env:PYTHONPATH = ''
+$env:TEMP = "$PSScriptRoot\installer_files\temp"
+$env:TMP = "$PSScriptRoot\installer_files\temp"
 
 cls
 do {
@@ -33,12 +35,12 @@ do {
 switch ($gpuChoice)
 {
 	'A' {
-		$packages = 'python=3.10.9','pytorch[version=2,build=py3.10_cuda11.7*]','torchvision','torchaudio','pytorch-cuda=11.7','cuda-toolkit','ninja','git'
+		$packages = 'python=3.10','pytorch[version=2,build=py3.10_cuda11.7*]','torchvision','torchaudio','pytorch-cuda=11.7','cuda-toolkit','ninja','git'
 		$packageChannels = '-c pytorch','-c nvidia/label/cuda-11.7.0','-c nvidia','-c conda-forge'
 	}
 
 	'B' {
-		$packages = 'pytorch','torchvision','torchaudio','cpuonly','git'
+		$packages = 'python=3.10','pytorch','torchvision','torchaudio','cpuonly','git'
 		$packageChannels = '-c conda-forge','-c pytorch'
 	}
 }
