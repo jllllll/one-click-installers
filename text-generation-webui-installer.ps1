@@ -11,12 +11,15 @@ $env:MAMBA_ROOT_PREFIX= "$PSScriptRoot\installer_files\mamba"
 $installerEnvDir = "$PSScriptRoot\installer_files\env"
 $micromambaDownloadUrl = 'https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64'
 $webuiRepoUrl = 'https://github.com/oobabooga/text-generation-webui.git'
-$bitsandbytesWindowsWheel = 'https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.37.2-py3-none-any.whl'
+$bitsandbytesWindowsWheel = 'https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.38.1-py3-none-any.whl'
 $gptqRepoUrl = 'https://github.com/oobabooga/GPTQ-for-LLaMa.git'
 $gptqBackupWheel = 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl' # Not guaranteed to work!
 
 
-
+# better isolation for virtual environment
+$env:CONDA_SHLVL = ''
+$env:PYTHONNOUSERSITE = 1
+$env:PYTHONPATH = ''
 
 cls
 do {
@@ -84,14 +87,23 @@ if ($gpuChoice -eq 'A')
 	if (!(Test-Path '.\repositories\GPTQ-for-LLaMa'))
 	{
 		git clone $gptqRepoUrl '.\repositories\GPTQ-for-LLaMa' -b cuda
-		cd '.\repositories\GPTQ-for-LLaMa'
-		python -m pip install -r requirements.txt
-		python setup_cuda.py install
-		if (!(Test-Path "$installerEnvDir\lib\site-packages\quant_cuda-0.0.0-py3.10-win-amd64.egg"))
-		{
-			Write-Warning 'CUDA kernal compilation failed. Will try to install from wheel.'
-			python -m pip install $gptqBackupWheel; if ($LASTEXITCODE -ne 0) {Write-Error 'Wheel installation failed.';pause;exit}
-		}
+	}
+	cd '.\repositories\GPTQ-for-LLaMa'
+	python -m pip install -r requirements.txt
+	if (!(Test-Path "$installerEnvDir\lib\site-packages\quant_cuda*"))
+	{
+		# change from deprecated install method  python setup_cuda.py install
+		cp '.\setup_cuda.py' '.\setup.py'
+		python -m pip install .
+	}
+	if (!(Test-Path "$installerEnvDir\lib\site-packages\quant_cuda*"))
+	{
+		Write-Warning 'CUDA kernal compilation failed. Will try to install from wheel.'
+
+		# workaround for python bug
+		cd ..
+
+		python -m pip install $gptqBackupWheel; if ($LASTEXITCODE -ne 0) {Write-Error 'Wheel installation failed.';pause;exit}
 	}
 }
 
