@@ -38,12 +38,12 @@ switch ($gpuChoice)
 {
 	'A' {
 		$packages = 'python=3.10','pytorch[version=2,build=py3.10_cuda11.7*]','torchvision','torchaudio','pytorch-cuda=11.7','cuda-toolkit','ninja','git'
-		$packageChannels = '-c pytorch','-c nvidia/label/cuda-11.7.0','-c nvidia','-c conda-forge'
+		$packageChannels = 'pytorch','nvidia/label/cuda-11.7.0','nvidia','conda-forge'
 	}
 
 	'B' {
 		$packages = 'python=3.10','pytorch','torchvision','torchaudio','cpuonly','git'
-		$packageChannels = '-c conda-forge','-c pytorch'
+		$packageChannels = 'pytorch','conda-forge'
 	}
 }
 
@@ -52,6 +52,7 @@ $micromambaExe = $env:MAMBA_ROOT_PREFIX + '\micromamba.exe'
 
 # figure out whether micromamba needs to be installed and download micromamba
 if (!(Test-Path $env:MAMBA_ROOT_PREFIX)) {mkdir $env:MAMBA_ROOT_PREFIX > $null}
+if (!(Test-Path $env:TEMP)) {mkdir $env:TEMP > $null}
 if (!(Test-Path $micromambaExe)) {Invoke-RestMethod $micromambaDownloadUrl -OutFile $micromambaExe}
 if (!(Test-Path $micromambaExe)) {Write-Error 'Unable to download micromamba.';pause;exit}
 
@@ -61,7 +62,7 @@ if (!(Test-Path $micromambaExe)) {Write-Error 'Unable to download micromamba.';p
 # create the installer env
 if (!(Test-Path ($installerEnvDir + '\python.exe')))
 {
-	micromamba create -y --no-shortcuts --prefix $installerEnvDir $packageChannels $packages
+	micromamba create -y --no-shortcuts --prefix $installerEnvDir $packageChannels.foreach({$_.Trim(' ')}).foreach({'-c',$_}) $packages
 }
 
 # activate installer env
