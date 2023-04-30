@@ -1,3 +1,5 @@
+@echo off
+
 cd /D "%~dp0"
 
 @rem workaround for broken Windows installs

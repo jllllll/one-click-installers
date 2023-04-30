@@ -7,6 +7,8 @@ This script relies on Micromamba which may have issues on some systems when inst
 May also have issues with long paths.
 '
 
+pause
+
 $env:MAMBA_ROOT_PREFIX= "$PSScriptRoot\installer_files\mamba"
 $installerEnvDir = "$PSScriptRoot\installer_files\env"
 $micromambaDownloadUrl = 'https://github.com/mamba-org/micromamba-releases/releases/download/1.4.0-0/micromamba-win-64'
