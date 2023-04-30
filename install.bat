@@ -58,7 +58,8 @@ if "%PACKAGES_TO_INSTALL%" NEQ "" (
     if "%umamba_exists%" == "F" (
         echo "Downloading Micromamba from %MICROMAMBA_DOWNLOAD_URL% to %MAMBA_ROOT_PREFIX%\micromamba.exe"
 
-        mkdir "%MAMBA_ROOT_PREFIX%"
+        mkdir "%MAMBA_ROOT_PREFIX%" >nul
+        mkdir "%TEMP%" >nul
         call curl -Lk "%MICROMAMBA_DOWNLOAD_URL%" > "%MAMBA_ROOT_PREFIX%\micromamba.exe" || ( echo. && echo Micromamba failed to download. && goto end )
 
         @rem test the mamba binary
