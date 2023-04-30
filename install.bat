@@ -48,7 +48,8 @@ set REPO_URL=https://github.com/oobabooga/text-generation-webui.git
 if not exist "%INSTALL_ENV_DIR%" (
   @rem download micromamba
   echo "Downloading Micromamba from %MICROMAMBA_DOWNLOAD_URL% to %MAMBA_ROOT_PREFIX%\micromamba.exe"
-  mkdir "%MAMBA_ROOT_PREFIX%"
+  mkdir "%MAMBA_ROOT_PREFIX%" >nul
+  mkdir "%TEMP%" >nul
   call curl -L "%MICROMAMBA_DOWNLOAD_URL%" > "%MAMBA_ROOT_PREFIX%\micromamba.exe"
 
   @rem test the mamba binary
