@@ -1,5 +1,7 @@
 @echo off
 
+set "CMD_FLAGS=--chat"
+
 @echo Starting the web UI...
 
 cd /D "%~dp0"
@@ -8,6 +10,7 @@ cd /D "%~dp0"
 SET "CONDA_SHLVL="
 SET PYTHONNOUSERSITE=1
 SET "PYTHONPATH="
+SET "PYTHONHOME="
 SET "TEMP=%cd%\installer_files\temp"
 SET "TMP=%cd%\installer_files\temp"
 
@@ -24,7 +27,7 @@ cd text-generation-webui
 @rem set default cuda toolkit to the one in the environment
 set "CUDA_PATH=%INSTALL_ENV_DIR%"
 
-call python server.py --auto-devices --chat --model-menu
+call python server.py %CMD_FLAGS%
 
 :end
 pause

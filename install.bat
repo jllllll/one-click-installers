@@ -3,8 +3,11 @@
 @rem This script will install miniconda and git with all dependencies for this project
 @rem This enables a user to install this project without manually installing conda and git.
 
+@rem workaround for broken Windows installs
+set PATH=%PATH%;%SystemRoot%\system32
+
 cd /D "%~dp0"
-echo "%cd%"| findstr /C:" " >nul && echo This script relies on Miniconda which can not be installed under a path with spaces. && goto end
+echo "%cd%"| findstr /C:" " >nul && echo This script relies on Miniconda which can not be silently installed under a path with spaces. && goto end
 echo WARNING: This script relies on Miniconda which will fail to install if the path is too long.&& echo.
 
 pause
@@ -23,7 +26,7 @@ if /I "%gpuchoice%" == "A" (
   set "CHANNEL=-c pytorch -c nvidia/label/cuda-11.7.0 -c nvidia -c conda-forge"
 ) else if /I "%gpuchoice%" == "B" (
   set "PACKAGES_TO_INSTALL=pytorch torchvision torchaudio cpuonly git"
-  set "CHANNEL=-c conda-forge -c pytorch"
+  set "CHANNEL=-c pytorch -c conda-forge"
 ) else (
   echo Invalid choice. Exiting...
   exit
@@ -33,15 +36,13 @@ if /I "%gpuchoice%" == "A" (
 SET "CONDA_SHLVL="
 SET PYTHONNOUSERSITE=1
 SET "PYTHONPATH="
+SET "PYTHONHOME="
 SET "TEMP=%cd%\installer_files\temp"
 SET "TMP=%cd%\installer_files\temp"
 
-@rem workaround for broken Windows installs
-set PATH=%PATH%;%SystemRoot%\system32
-
 set MINICONDA_DIR=%cd%\installer_files\miniconda3
 set INSTALL_ENV_DIR=%cd%\installer_files\env
-set MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py310_23.1.0-1-Windows-x86_64.exe
+set MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
 set REPO_URL=https://github.com/oobabooga/text-generation-webui.git
 
 if not exist "%MINICONDA_DIR%\Scripts\conda.exe" (
@@ -51,8 +52,8 @@ if not exist "%MINICONDA_DIR%\Scripts\conda.exe" (
 
   @rem install miniconda
   echo. && echo Installing Miniconda To "%MINICONDA_DIR%" && echo Please Wait... && echo.
-  start "" /W /D "%cd%" "Miniconda3-py310_23.1.0-1-Windows-x86_64.exe" /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /NoRegistry=1 /S /D=%MINICONDA_DIR% || ( echo. && echo Miniconda installer not found. && goto end )
-  del /q "Miniconda3-py310_23.1.0-1-Windows-x86_64.exe"
+  start "" /W /D "%cd%" "Miniconda3-latest-Windows-x86_64.exe" /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /NoRegistry=1 /S /D=%MINICONDA_DIR% || ( echo. && echo Miniconda installer not found. && goto end )
+  del /q "Miniconda3-latest-Windows-x86_64.exe"
   if not exist "%MINICONDA_DIR%\Scripts\activate.bat" ( echo. && echo Miniconda install failed. && goto end )
 )
 
@@ -80,15 +81,34 @@ if exist text-generation-webui\ (
   git pull
 ) else (
   git clone https://github.com/oobabooga/text-generation-webui.git
-  call python -m pip install https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.38.1-py3-none-any.whl
   cd text-generation-webui || goto end
 )
 call python -m pip install -r requirements.txt --upgrade
-call python -m pip install -r extensions\api\requirements.txt --upgrade
-call python -m pip install -r extensions\elevenlabs_tts\requirements.txt --upgrade
-call python -m pip install -r extensions\google_translate\requirements.txt --upgrade
-call python -m pip install -r extensions\silero_tts\requirements.txt --upgrade
-call python -m pip install -r extensions\whisper_stt\requirements.txt --upgrade
+
+@rem install all extension requirements except for superbooga
+for /R extensions %%I in (requirements.t?t) do (
+  echo %%~I| FINDSTR "extensions\superbooga" >nul 2>&1 || call python -m pip install -r %%~I --upgrade
+)
+
+@rem Latest bitsandbytes requires minimum compute 7.0   will try to install old version if needed
+set "MIN_COMPUTE=70"
+set "OLD_BNB=https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.38.1-py3-none-any.whl"
+if exist "%INSTALL_ENV_DIR%\bin\__nvcc_device_query.exe" (
+  for /f "delims=" %%G in ('call "%INSTALL_ENV_DIR%\bin\__nvcc_device_query.exe"') do (
+    for %%C in (%%G) do (
+      call :GetHighestCompute %%C
+    )
+  )
+)
+set "bnbInstallFailMessage="You will be unable to use --load-in-8bit until you install bitsandbytes 0.38.1!""
+set "bnbInstallSuccessMessage="Older version of bitsandbytes has been installed to maintain compatibility." "You will be unable to use --load-in-4bit!""
+if defined HIGHEST_COMPUTE (
+  if %HIGHEST_COMPUTE% LSS %MIN_COMPUTE% (
+    call python -m pip install %OLD_BNB% --force-reinstall --no-deps && call :PrintBigMessage "WARNING: GPU with compute < 7.0 detected!" %bnbInstallSuccessMessage% || ^
+call :PrintBigMessage "WARNING: GPU with compute < 7.0 detected!" %bnbInstallFailMessage% 
+  )
+)
+
 
 @rem skip gptq install if cpu only
 if /I not "%gpuchoice%" == "A" goto end
@@ -103,20 +123,43 @@ if not exist GPTQ-for-LLaMa\ (
 )
 
 cd GPTQ-for-LLaMa || goto end
-call python -m pip install -r requirements.txt
 if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda*" (
   @rem change from deprecated install method  python setup_cuda.py install
   cp setup_cuda.py setup.py
   call python -m pip install .
 )
+set "gptqMessage="WARNING: GPTQ-for-LLaMa compilation failed, but this is FINE and can be ignored!" "The installer will proceed to install a pre-compiled wheel.""
 if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda*" (
-  echo. && echo CUDA kernel compilation failed. Will try to install from wheel.&& echo.
+  call :PrintBigMessage %gptqMessage%
   
   @rem workaround for python bug
   cd ..
 
-  call python -m pip install https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl || ( echo. && echo Wheel installation failed. && goto end )
+  call python -m pip install https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl && echo Wheel installation success! || (
+    echo.
+    echo ERROR: GPTQ wheel installation failed. You will not be able to use GPTQ-based models.
+    goto end
+  )
 )
+
+
+
+@rem below are functions for the script   next line skips these during normal execution
+goto end
+
+:GetHighestCompute
+if not defined HIGHEST_COMPUTE (
+  set "HIGHEST_COMPUTE=%1"
+) else if %1 GTR %HIGHEST_COMPUTE% set "HIGHEST_COMPUTE=%1"
+exit /b
+
+:PrintBigMessage
+echo. && echo.
+echo *******************************************************************
+for %%M in (%*) do echo * %%~M
+echo *******************************************************************
+echo. && echo.
+exit /b
 
 :end
 pause
