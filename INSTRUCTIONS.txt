@@ -7,7 +7,13 @@ Here is how to get it up and running:
 
 To add flags like --chat, --notebook, --extensions, etc, edit the
 "start-webui" script using a text editor and add the desired flags
-to the line that says "python server.py...".
+to the CMD_FLAGS variable at the top. It should look like this:
+
+set "CMD_FLAGS=--chat"
+
+For instance, to add the --api flag, change it to
+
+set "CMD_FLAGS=--chat --api"
 
 To get the latest updates in the future, just re-run the "install" script.
 This will only install the updates, so it should be much faster.
@@ -16,4 +22,3 @@ May need to delete '\text-generation-webui\repositories\GPTQ-for-LLaMa' folder i
 You can open a command-line attached to the virtual environment by running the "micromamba-cmd" script.
 
 This installer uses a custom-built Windows-compatible version of bitsandbytes. Source: https://github.com/acpopescu/bitsandbytes/tree/cmake_windows
-When starting the webui, you may encounter an error referencing cuda 116. Starting the webui again should allow bitsandbytes to detect the correct version.
