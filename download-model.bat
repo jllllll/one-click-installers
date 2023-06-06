@@ -8,6 +8,7 @@ cd /D "%~dp0"
 SET "CONDA_SHLVL="
 SET PYTHONNOUSERSITE=1
 SET "PYTHONPATH="
+SET "PYTHONHOME="
 SET "TEMP=%cd%\installer_files\temp"
 SET "TMP=%cd%\installer_files\temp"
 
@@ -15,6 +16,9 @@ SET "TMP=%cd%\installer_files\temp"
 set PATH=%PATH%;%SystemRoot%\system32
 
 set INSTALL_ENV_DIR=%cd%\installer_files\env
+
+@rem regenerate conda hooks to ensure portability
+call "%INSTALL_ENV_DIR%\Scripts\conda.exe" init --no-user >nul 2>&1
 
 if not exist "%INSTALL_ENV_DIR%\condabin\conda.bat" ( echo Conda not found. && goto end )
 call "%INSTALL_ENV_DIR%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
