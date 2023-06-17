@@ -119,15 +119,21 @@ call :PrintBigMessage "WARNING: GPU with compute < 7.0 detected!" %bnbInstallFai
 @rem skip gptq install if cpu only
 if /I not "%gpuchoice%" == "A" goto end
 
-@rem download gptq and compile locally and if compile fails, install from wheel
+@rem install exllama and gptq-for-llama below
 if not exist repositories\ (
   mkdir repositories
 )
 cd repositories || goto end
+
+@rem download or update exllama as needed
+if not exist exllama\ (
+  git clone https://github.com/turboderp/exllama.git
+) else pushd exllama && git pull && popd
+
+@rem download gptq and compile locally and if compile fails, install from wheel
 if not exist GPTQ-for-LLaMa\ (
   git clone https://github.com/oobabooga/GPTQ-for-LLaMa.git -b cuda
 )
-
 cd GPTQ-for-LLaMa || goto end
 if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda*" (
   @rem change from deprecated install method  python setup_cuda.py install
