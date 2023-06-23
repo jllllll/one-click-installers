@@ -5,8 +5,14 @@
 @rem using micromamba (an 8mb static-linked single-file binary, conda replacement).
 @rem This enables a user to install this project without manually installing conda and git.
 
-echo WARNING: This script relies on Micromamba which may have issues on some systems when installed under a path with spaces.
-echo          May also have issues with long paths.&& echo.
+cd /D "%~dp0"
+
+call :PrintBigMessage "WARNING: This script relies on Micromamba which may have issues when installed under a path with spaces." "         May also have issues with long paths."
+set "SPCHARMESSAGE="WARNING: Special characters were detected in the installation path!" "         This can cause the installation to fail!""
+echo "%CD%"| findstr /R /C:"[!#\$%&()\*+,;<=>?@\[\]\^`{|}~]" >nul && (
+  call :PrintBigMessage %SPCHARMESSAGE%
+)
+set SPCHARMESSAGE=
 
 pause
 cls
@@ -20,17 +26,15 @@ set /p "gpuchoice=Input> "
 set gpuchoice=%gpuchoice:~0,1%
 
 if /I "%gpuchoice%" == "A" (
-    set "PACKAGES_TO_INSTALL=python=3.10 pytorch[version=2,build=py3.10_cuda11.7*] torchvision torchaudio pytorch-cuda=11.7 cuda-toolkit ninja git"
-    set "CHANNEL=-c pytorch -c nvidia/label/cuda-11.7.0 -c nvidia -c conda-forge"
+    set "PACKAGES_TO_INSTALL=python=3.10 cuda-toolkit ninja git"
+    set "CHANNEL=-c nvidia/label/cuda-11.7.0 -c nvidia -c conda-forge"
 ) else if /I "%gpuchoice%" == "B" (
-    set "PACKAGES_TO_INSTALL=python=3.10 pytorch torchvision torchaudio cpuonly git"
-    set "CHANNEL=-c pytorch -c conda-forge"
+    set "PACKAGES_TO_INSTALL=python=3.10 ninja git"
+    set "CHANNEL=-c conda-forge"
 ) else (
     echo Invalid choice. Exiting...
     exit
 )
-
-cd /D "%~dp0"
 
 @rem better isolation for virtual environment
 SET "CONDA_SHLVL="
@@ -55,29 +59,31 @@ if "%ERRORLEVEL%" EQU "0" set umamba_exists=T
 
 @rem (if necessary) install git and conda into a contained environment
 if "%PACKAGES_TO_INSTALL%" NEQ "" (
-    @rem download micromamba
-    if "%umamba_exists%" == "F" (
-        echo "Downloading Micromamba from %MICROMAMBA_DOWNLOAD_URL% to %MAMBA_ROOT_PREFIX%\micromamba.exe"
-
-        mkdir "%MAMBA_ROOT_PREFIX%" >nul
-        mkdir "%TEMP%" >nul
-        call curl -Lk "%MICROMAMBA_DOWNLOAD_URL%" > "%MAMBA_ROOT_PREFIX%\micromamba.exe" || ( echo. && echo Micromamba failed to download. && goto end )
-
-        @rem test the mamba binary
-        echo Micromamba version:
-        call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version || ( echo. && echo Micromamba not found. && goto end )
-    )
-
-    @rem create micromamba hook
-    if not exist "%MAMBA_ROOT_PREFIX%\condabin\micromamba.bat" (
-      call "%MAMBA_ROOT_PREFIX%\micromamba.exe" shell hook >nul 2>&1
-    )
-
-    @rem create the installer env
-    if not exist "%INSTALL_ENV_DIR%" (
-      echo Packages to install: %PACKAGES_TO_INSTALL%
-      call "%MAMBA_ROOT_PREFIX%\micromamba.exe" create -y --no-shortcuts --prefix "%INSTALL_ENV_DIR%" %CHANNEL% %PACKAGES_TO_INSTALL% || ( echo. && echo Conda environment creation failed. && goto end )
-    )
+  @rem download micromamba
+  if "%umamba_exists%" == "F" (
+    echo "Downloading Micromamba from %MICROMAMBA_DOWNLOAD_URL% to %MAMBA_ROOT_PREFIX%\micromamba.exe"
+  
+    mkdir "%MAMBA_ROOT_PREFIX%" >nul
+    mkdir "%TEMP%" >nul
+    call curl -Lk "%MICROMAMBA_DOWNLOAD_URL%" > "%MAMBA_ROOT_PREFIX%\micromamba.exe" || ( echo. && echo Micromamba failed to download. && goto end )
+  
+    @rem test the mamba binary
+    echo Micromamba version:
+    call "%MAMBA_ROOT_PREFIX%\micromamba.exe" --version || ( echo. && echo Micromamba not found. && goto end )
+  )
+  
+  @rem create micromamba hook
+  if not exist "%MAMBA_ROOT_PREFIX%\condabin\micromamba.bat" (
+    call "%MAMBA_ROOT_PREFIX%\micromamba.exe" shell hook >nul 2>&1
+  )
+  
+  @rem create the installer env
+  if not exist "%INSTALL_ENV_DIR%" (
+    echo Packages to install: %PACKAGES_TO_INSTALL%
+    call "%MAMBA_ROOT_PREFIX%\micromamba.exe" create -y --no-shortcuts --prefix "%INSTALL_ENV_DIR%" %CHANNEL% %PACKAGES_TO_INSTALL% || ( echo. && echo Conda environment creation failed. && goto end )
+    if /I "%gpuchoice%" == "A" call "%MAMBA_ROOT_PREFIX%\micromamba.exe" run --prefix "%INSTALL_ENV_DIR%" python -m pip install torch==2.0.1+cu117 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117|| ( echo. && echo Pytorch installation failed.&& goto end )
+    if /I "%gpuchoice%" == "B" call "%MAMBA_ROOT_PREFIX%\micromamba.exe" run --prefix "%INSTALL_ENV_DIR%" python -m pip install torch torchvision torchaudio|| ( echo. && echo Pytorch installation failed.&& goto end )
+  )
 )
 
 @rem check if conda environment was actually created
@@ -89,7 +95,7 @@ call "%MAMBA_ROOT_PREFIX%\condabin\micromamba.bat" activate "%INSTALL_ENV_DIR%" 
 @rem set default cuda toolkit to the one in the environment
 set "CUDA_PATH=%INSTALL_ENV_DIR%"
 
-@rem clone the repository and install the pip requirements
+@rem clone the repository
 if exist text-generation-webui\ (
   cd text-generation-webui
   git pull
@@ -97,6 +103,11 @@ if exist text-generation-webui\ (
   git clone https://github.com/oobabooga/text-generation-webui.git
   cd text-generation-webui || goto end
 )
+
+@rem Loop through each "git+" requirement and uninstall it   workaround for inconsistent git package updating
+for /F "delims=" %%a in (requirements.txt) do echo "%%a"| findstr /C:"git+" >nul&& for /F "tokens=4 delims=/" %%b in ("%%a") do for /F "delims=@" %%c in ("%%b") do python -m pip uninstall -y %%c
+
+@rem install the pip requirements
 call python -m pip install -r requirements.txt --upgrade
 
 @rem install all extension requirements except for superbooga
@@ -104,26 +115,7 @@ for /R extensions %%I in (requirements.t?t) do (
   echo %%~I| FINDSTR "extensions\superbooga" >nul 2>&1 || call python -m pip install -r %%~I --upgrade
 )
 
-@rem Latest bitsandbytes requires minimum compute 7.0   will try to install old version if needed
-set "MIN_COMPUTE=70"
-set "OLD_BNB=https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.38.1-py3-none-any.whl"
-if exist "%INSTALL_ENV_DIR%\bin\__nvcc_device_query.exe" (
-  for /f "delims=" %%G in ('call "%INSTALL_ENV_DIR%\bin\__nvcc_device_query.exe"') do (
-    for %%C in (%%G) do (
-      call :GetHighestCompute %%C
-    )
-  )
-)
-set "bnbInstallFailMessage="You will be unable to use --load-in-8bit until you install bitsandbytes 0.38.1!""
-set "bnbInstallSuccessMessage="Older version of bitsandbytes has been installed to maintain compatibility." "You will be unable to use --load-in-4bit!""
-if defined HIGHEST_COMPUTE (
-  if %HIGHEST_COMPUTE% LSS %MIN_COMPUTE% (
-    call python -m pip install %OLD_BNB% --force-reinstall --no-deps && call :PrintBigMessage "WARNING: GPU with compute < 7.0 detected!" %bnbInstallSuccessMessage% || ^
-call :PrintBigMessage "WARNING: GPU with compute < 7.0 detected!" %bnbInstallFailMessage% 
-  )
-)
-
-@rem skip gptq install if cpu only
+@rem skip gptq and exllama install if cpu only
 if /I not "%gpuchoice%" == "A" goto end
 
 @rem install exllama and gptq-for-llama below
