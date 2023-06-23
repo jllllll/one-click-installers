@@ -1,5 +1,7 @@
 @echo off
 
+cd /D "%~dp0"
+
 call :PrintBigMessage "WARNING: This script relies on Micromamba and Conda which may have issues when installed under a path with spaces." "         May also have issues with long paths."
 set "SPCHARMESSAGE="WARNING: Special characters were detected in the installation path!" "         This can cause the installation to fail!""
 echo "%CD%"| findstr /R /C:"[!#\$%&()\*+,;<=>?@\[\]\^`{|}~]" >nul && (
@@ -33,8 +35,6 @@ if /I "%gpuchoice%" == "A" (
   echo Invalid choice. Exiting...
   exit
 )
-
-cd /D "%~dp0"
 
 @rem better isolation for virtual environment
 SET "CONDA_SHLVL="
