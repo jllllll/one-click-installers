@@ -44,12 +44,10 @@ echo %modelchoice%| findstr /C:"huggingface.co/"&& for /F "tokens=3,4 delims=/" 
 goto %TextOnly%
 
 :False
-call python download-model.py
 call python download-model.py %modelchoice%
 goto end
 
 :True
-call python download-model.py --text-only
 call python download-model.py %modelchoice% --text-only
 
 :end
