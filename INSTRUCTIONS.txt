@@ -1,19 +1,14 @@
 Thank you for downloading oobabooga/text-generation-webui.
 Here is how to get it up and running:
 
-1. Run the "install" script to install the web UI and its requirements in this folder.
-2. Run the "download-model" script to download a model of your choice. Change TextOnly variable at top of script to download only config files.
-3. Run the "start-webui" script to launch the web UI.
+1. Run the "webui.ps1" script in Powershell to install the web UI and its requirements in this folder (~/text-gen-install for WSL).
+2. When the installation is complete, you will see a menu.
 
 To add flags like --chat, --notebook, --extensions, etc, edit the
-"start-webui" script using a text editor and add the desired flags
-to the line that says "python server.py...".
+"CMD_FLAGS.txt" file using a text editor and add the desired flags.
 
-To get the latest updates in the future, just re-run the "install" script.
+To get the latest updates in the future, just re-run the "webui.ps1" script in Powershell and select the update option.
 This will only install the updates, so it should be much faster.
-May need to delete '\text-generation-webui\repositories\GPTQ-for-LLaMa' folder if GPTQ-for-LLaMa needs to be updated.
+May need to uninstall the "quant_cuda" python package if GPTQ-for-LLaMa needs to be updated.
 
-You can open a command-line attached to the virtual environment by running the "micromamba-cmd" script.
-
-This installer uses a custom-built Windows-compatible version of bitsandbytes. Source: https://github.com/acpopescu/bitsandbytes/tree/cmake_windows
-When starting the webui, you may encounter an error referencing cuda 116. Starting the webui again should allow bitsandbytes to detect the correct version.
+You can open a command-line attached to the virtual environment by running the "webui.ps1" script in Powershell and selecting the appropriate option.
