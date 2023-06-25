@@ -79,13 +79,13 @@ function InstallDependencies
 {
     $gpuChoice = Read-Host "What is your GPU?`n
 A) NVIDIA
-B) Mac
-C) None (I want to run in CPU mode)`n`nInput"
+B) None (I want to run in CPU mode)`n`nInput"
 
+    if ($IsMacOS) {$gpuChoice = 'b'}
     switch ($gpuChoice)
     {
         'a' {$condaPackages = 'cuda ninja git -c nvidia/label/cuda-11.7.0 -c nvidia'; $pipPackages = 'torch==2.0.1+cu117 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117'; break}
-        {'b','c' -contains $_} {$condaPackages = 'ninja git'; $pipPackages = 'torch torchvision torchaudio'; break}
+        'b' {$condaPackages = 'ninja git'; $pipPackages = 'torch torchvision torchaudio'; break}
         Default {Write-Error 'Invalid choice. Exiting...'; pause; Exit-PSSession}
     }
 
