@@ -150,7 +150,7 @@ function UpdateDependencies
             if ($IsOnWindows) {python -m pip install 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'}
             elseif ($IsLinux) {python -m pip install 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/Linux-x64/quant_cuda-0.0.0-cp310-cp310-linux_x86_64.whl'}
             if ($LASTEXITCODE -eq 0) {Write-Output "`nWheel installation success!"}
-            else {Write-Error "ERROR: GPTQ wheel installation failed.`n       You will not be able to use GPTQ-based models."}
+            else {PrintBigMessage "ERROR: GPTQ wheel installation failed.`n       You will not be able to use GPTQ-based models." 'Red'}
         }
     }
     Set-Location $INSTALL_DIR_ROOT
