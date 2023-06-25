@@ -11,7 +11,7 @@ $MINICONDA_DOWNLOAD_URL = $(
         })
     )}
     elseif ($IsMacOS) {(
-        'https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-MacOSX--{0}.sh' -f $(switch ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture) {
+        'https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-MacOSX-{0}.sh' -f $(switch ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture) {
             'x64' { 'x86_64' }
             {$_ -imatch 'arm'} { 'arm64' }
             Default {Write-Error "Unknown system architecture: $_! This script runs only on x64 or arm64!"; pause; Exit-PSSession}
