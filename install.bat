@@ -28,9 +28,11 @@ set gpuchoice=%gpuchoice:~0,1%
 if /I "%gpuchoice%" == "A" (
   set "PACKAGES_TO_INSTALL=cuda-toolkit ninja git"
   set "CHANNEL=-c nvidia/label/cuda-11.7.0 -c nvidia -c conda-forge"
+  set "PYTORCH_CMD=torch==2.0.1+cu117 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117"
 ) else if /I "%gpuchoice%" == "B" (
   set "PACKAGES_TO_INSTALL=ninja git"
   set "CHANNEL=-c conda-forge"
+  set "PYTORCH_CMD=torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
 ) else (
   echo Invalid choice. Exiting...
   exit
@@ -82,8 +84,7 @@ call "%INSTALL_ENV_DIR%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%" || ( ec
 if not exist "%INSTALL_ENV_DIR%\Library\git-cmd.exe" (
   echo Packages to install: %PACKAGES_TO_INSTALL%
   call conda install -y %CHANNEL% %PACKAGES_TO_INSTALL%
-  if /I "%gpuchoice%" == "A" call python -m pip install torch==2.0.1+cu117 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117|| ( echo. && echo Pytorch installation failed.&& goto end )
-  if /I "%gpuchoice%" == "B" call python -m pip install torch torchvision torchaudio|| ( echo. && echo Pytorch installation failed.&& goto end )
+  call conda run --live-stream -p "%INSTALL_ENV_DIR%" python -m pip install %PYTORCH_CMD%|| ( echo. && echo Pytorch installation failed.&& goto end )
 )
 
 @rem set default cuda toolkit to the one in the environment
@@ -111,6 +112,9 @@ for /R extensions %%I in (requirements.t?t) do (
 
 @rem skip gptq and exllama install if cpu only
 if /I not "%gpuchoice%" == "A" goto end
+
+@rem Install llama-cpp-python built with cuBLAS support for NVIDIA GPU acceleration
+for /F "tokens=2 delims==;" %%a in ('findstr /C:"llama-cpp-python==" requirements.txt') do python -m pip install llama-cpp-python==%%a --force-reinstall --no-deps --index-url=https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cu117
 
 @rem install exllama and gptq-for-llama below
 if not exist repositories\ (
