@@ -77,15 +77,17 @@ Input'
 
 function InstallDependencies
 {
-    $gpuChoice = Read-Host "What is your GPU?`n
+    if ($IsMacOS) {$gpuChoice = 'b'}
+    else {
+        $gpuChoice = Read-Host "What is your GPU?`n
 A) NVIDIA
 B) None (I want to run in CPU mode)`n`nInput"
-
-    if ($IsMacOS) {$gpuChoice = 'b'}
+    }
+    
     switch ($gpuChoice)
     {
         'a' {$condaPackages = 'cuda ninja git -c nvidia/label/cuda-11.7.0 -c nvidia'; $pipPackages = 'torch==2.0.1+cu117 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117'; break}
-        'b' {$condaPackages = 'ninja git'; $pipPackages = 'torch torchvision torchaudio'; break}
+        'b' {$condaPackages = 'ninja git'; $pipPackages = 'torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu'; break}
         Default {Write-Error 'Invalid choice. Exiting...'; pause; Exit-PSSession}
     }
 
@@ -117,6 +119,9 @@ function UpdateDependencies
     # The following dependencies are for CUDA, not CPU
     $torchVersion = (python -m pip show torch).where({$_ -match 'Version:'}).split()[-1]
     if ($torchVersion -notmatch '\+cu') {return}
+
+    # Install llama-cpp-python built with cuBLAS support for NVIDIA GPU acceleration  No wheels available for ARM
+    if ((Get-Content 'requirements.txt' -raw) -match '(?<=llama-cpp-python==)\d+(?:\.\d+)*' -and !$IsArm) {python -m pip install ('llama-cpp-python=={0}' -f $Matches[0]) --force-reinstall --no-deps --index-url 'https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cu117'}
 
     New-Item 'repositories' -ItemType 'Directory' -ErrorAction SilentlyContinue > $null
 
