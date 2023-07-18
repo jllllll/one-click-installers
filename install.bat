@@ -30,9 +30,11 @@ set gpuchoice=%gpuchoice:~0,1%
 if /I "%gpuchoice%" == "A" (
   set "PACKAGES_TO_INSTALL=python=3.10 cuda-toolkit ninja git"
   set "CHANNEL=-c nvidia/label/cuda-11.7.0 -c nvidia -c conda-forge"
+  set "PYTORCH_CMD=torch==2.0.1+cu117 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117"
 ) else if /I "%gpuchoice%" == "B" (
   set "PACKAGES_TO_INSTALL=python=3.10 ninja git"
   set "CHANNEL=-c conda-forge"
+  set "PYTORCH_CMD=torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
 ) else (
   echo Invalid choice. Exiting...
   exit
@@ -70,8 +72,7 @@ call "%MINICONDA_DIR%\Scripts\activate.bat" || ( echo Miniconda hook not found. 
 if not exist "%INSTALL_ENV_DIR%" (
   echo Packages to install: %PACKAGES_TO_INSTALL%
   call conda create --no-shortcuts -y -k -p "%INSTALL_ENV_DIR%" %CHANNEL% %PACKAGES_TO_INSTALL% || ( echo. && echo Conda environment creation failed. && goto end )
-  if /I "%gpuchoice%" == "A" call conda run --live-stream -p "%INSTALL_ENV_DIR%" python -m pip install torch==2.0.1+cu117 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117|| ( echo. && echo Pytorch installation failed.&& goto end )
-  if /I "%gpuchoice%" == "B" call conda run --live-stream -p "%INSTALL_ENV_DIR%" python -m pip install torch torchvision torchaudio|| ( echo. && echo Pytorch installation failed.&& goto end )
+  call conda run --live-stream -p "%INSTALL_ENV_DIR%" python -m pip install %PYTORCH_CMD%|| ( echo. && echo Pytorch installation failed.&& goto end )
 )
 
 @rem check if conda environment was actually created
@@ -105,6 +106,9 @@ for /R extensions %%I in (requirements.t?t) do (
 
 @rem skip gptq and exllama install if cpu only
 if /I not "%gpuchoice%" == "A" goto end
+
+@rem Install llama-cpp-python built with cuBLAS support for NVIDIA GPU acceleration
+for /F "tokens=2 delims==;" %%a in ('findstr /C:"llama-cpp-python==" requirements.txt') do python -m pip install llama-cpp-python==%%a --force-reinstall --no-deps --index-url=https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cu117
 
 @rem install exllama and gptq-for-llama below
 if not exist repositories\ (
