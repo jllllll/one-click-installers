@@ -110,13 +110,6 @@ for /R extensions %%I in (requirements.t?t) do (
   echo %%~I| FINDSTR "extensions\superbooga" >nul 2>&1 || call python -m pip install -r %%~I --upgrade
 )
 
-@rem skip gptq and exllama install if cpu only
-if /I not "%gpuchoice%" == "A" goto end
-
-@rem Install llama-cpp-python built with cuBLAS support for NVIDIA GPU acceleration
-for /F "tokens=2 delims==;" %%a in ('findstr /C:"llama-cpp-python==" requirements.txt') do python -m pip install llama-cpp-python==%%a --force-reinstall --no-deps --index-url=https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cu117
-
-@rem install exllama and gptq-for-llama below
 if not exist repositories\ (
   mkdir repositories
 )
@@ -126,30 +119,6 @@ cd repositories || goto end
 if not exist exllama\ (
   git clone https://github.com/turboderp/exllama.git
 ) else pushd exllama && git pull && popd
-
-@rem download gptq and compile locally and if compile fails, install from wheel
-if not exist GPTQ-for-LLaMa\ (
-  git clone https://github.com/oobabooga/GPTQ-for-LLaMa.git -b cuda
-)
-cd GPTQ-for-LLaMa || goto end
-if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda*" (
-  @rem change from deprecated install method  python setup_cuda.py install
-  cp setup_cuda.py setup.py
-  call python -m pip install .
-)
-set "gptqMessage="WARNING: GPTQ-for-LLaMa compilation failed, but this is FINE and can be ignored!" "The installer will proceed to install a pre-compiled wheel.""
-if not exist "%INSTALL_ENV_DIR%\lib\site-packages\quant_cuda*" (
-  call :PrintBigMessage %gptqMessage%
-  
-  @rem workaround for python bug
-  cd ..
-
-  call python -m pip install https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl && echo Wheel installation success! || (
-    echo.
-    echo ERROR: GPTQ wheel installation failed. You will not be able to use GPTQ-based models.
-    goto end
-  )
-)
 
 
 
