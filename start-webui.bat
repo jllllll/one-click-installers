@@ -1,6 +1,6 @@
 @echo off
 
-set "CMD_FLAGS=--chat"
+set "CMD_FLAGS=--auto-launch"
 
 @echo Starting the web UI...
 
