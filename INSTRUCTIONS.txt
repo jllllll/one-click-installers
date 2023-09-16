@@ -4,11 +4,10 @@ Here is how to get it up and running:
 1. Run the "webui.ps1" script in Powershell to install the web UI and its requirements in this folder (~/text-gen-install for WSL).
 2. When the installation is complete, you will see a menu.
 
-To add flags like --chat, --notebook, --extensions, etc, edit the
+To add flags like --api, --cpu, --extensions, etc, edit the
 "CMD_FLAGS.txt" file using a text editor and add the desired flags.
 
 To get the latest updates in the future, just re-run the "webui.ps1" script in Powershell and select the update option.
 This will only install the updates, so it should be much faster.
-May need to uninstall the "quant_cuda" python package if GPTQ-for-LLaMa needs to be updated.
 
 You can open a command-line attached to the virtual environment by running the "webui.ps1" script in Powershell and selecting the appropriate option.

@@ -1,4 +1,6 @@
-$CMD_FLAGS = '--chat' # Not used if CMD_FLAGS.txt is present
+$CMD_FLAGS = '--auto-launch' # Not used if CMD_FLAGS.txt is present
+
+$env:HF_TOKEN = '' # Add your HuggingFace user access token here for use in model downloads
 
 
 $MINICONDA_DOWNLOAD_URL = $(
@@ -7,7 +9,7 @@ $MINICONDA_DOWNLOAD_URL = $(
         'https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-Linux-{0}.sh' -f $(switch ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture) {
             'x64' { if (Test-Path '/proc/sys/fs/binfmt_misc/WSLInterop') { $IsOnWSL = $true}; 'x86_64' }
             {$_ -imatch 'arm'} { $IsArm = $true; 'aarch64' }
-            Default {Write-Error "Unknown system architecture: $_! This script runs only on x64 or arm64!"; pause; Exit-PSSession}
+            Default {Write-Error "Unknown system architecture: $_! This script runs only on x64 or arm64/aarch64!"; pause; Exit-PSSession}
         })
     )}
     elseif ($IsMacOS) {(
@@ -53,26 +55,74 @@ function PrintBigMessage([string]$message,[string]$textColor='White')
 
 function DownloadModel
 {
-    $configChoice = Read-Host "1 - All model files`n2 - Configuration files only`n`nInput"
-    switch ($configChoice)
-    {
-        '2' {$configSetting = '--text-only'; break}
-        Default {}
-    }
+    $scriptArgs = python 'download-model.py' --help
+	$scriptArgs = $scriptArgs[($scriptArgs.IndexOf('options:') + 2)..$scriptArgs.count] -join "`n"
+	
     Clear-Host
-    $modelChoice = Read-Host 'Type the name of your desired Hugging Face model in the format organization/name or the URL to the model page.
+    $modelChoiceInput = Read-Host 'Type the name of your desired Hugging Face model in the format organization/name or the URL to the model page.
 
 Examples:
 
-facebook/opt-1.3b
-https://huggingface.co/facebook/opt-1.3b
-EleutherAI/pythia-1.4b-deduped
-https://huggingface.co/EleutherAI/pythia-1.4b-deduped
+  facebook/opt-1.3b
+  https://huggingface.co/facebook/opt-1.3b
+  EleutherAI/pythia-1.4b-deduped
+  https://huggingface.co/EleutherAI/pythia-1.4b-deduped
 
-Input'
 
-    $modelChoice = '{0}/{1}' -f $modelChoice.split('/')[-2,-1]
-    python 'download-model.py' $modelChoice $configSetting
+
+You can download a specific branch of a model''s repo by using ''--branch=BRANCH'' or by using the full URL for the branch.
+
+Examples:
+
+  TheBloke/Wizard-Vicuna-7B-Uncensored-GPTQ --branch=gptq-4bit-32g-actorder_True
+  https://huggingface.co/TheBloke/Wizard-Vicuna-7B-Uncensored-GPTQ --branch=gptq-4bit-32g-actorder_True
+  https://huggingface.co/TheBloke/Wizard-Vicuna-7B-Uncensored-GPTQ/tree/gptq-4bit-32g-actorder_True
+
+
+
+Other flags can also be used:'"
+
+$scriptArgs
+
+Input"
+	
+	if ($modelChoiceInput.contains('/tree/')) {
+		$modelChoice = '{0}/{1}' -f $(($modelChoiceInput -split '/tree/')[0].split('/')[-2,-1])
+		$modelBranch = ($modelChoiceInput -split '/tree/')[1].split(' ')[0]
+	} else {
+		$modelChoice = '{0}/{1}' -f $($modelChoiceInput.split(' ')[0].split('/')[-2,-1])
+		$modelBranch = 'main'
+	}
+	if ($modelChoiceInput.contains('--branch')) {$modelBranch = ($modelChoiceInput -split '--branch')[1].split(' ')[0].TrimStart('=')}
+	
+	$configSettings = $modelChoiceInput.split(' ')[1..$modelChoiceInput.split(' ').count].where({!$_.contains('--branch')})
+	if ($modelChoiceInput -match '--branch \S') {$configSettings.RemoveAt($modelChoiceInput.split(' ').IndexOf('--branch')-1)}
+	$configSettings += '--branch='+$modelBranch
+	
+	if ($modelChoice -like '*GGML*' -or $modelChoice -like '*GGUF*' -and !$modelChoiceInput.contains('--specific-file'))
+	{
+		$fileList = (python -c "import importlib
+links = importlib.import_module('download-model').ModelDownloader().get_download_links_from_huggingface('$modelChoice', '$modelBranch')
+for link in links[0]: print(link)").foreach({($_ -split '/resolve/')[1].split('/',2)[1]}) -join "`n"
+		
+		if ($modelChoice -like '*GGML*')
+		{$ggmlWarning = "`nGGML models are not supported by the latest version of the download-model.py script. Only GGUF.
+If you do not see any GGML .bin files in the list below, then you must download the file you want manually.`n"}
+		
+		$fileChoice = Read-Host "$ggmlWarning
+GGML/GGUF model detected.
+Select a file to download or enter 'all' to download all files:
+
+$fileList
+
+Input"
+		if ($fileChoice.trim() -ne 'all')
+		{
+			$configSettings = '--specific-file='+$fileChoice.trim()
+		}
+	}
+	
+    python 'download-model.py' $modelChoice $configSettings
 }
 
 function InstallDependencies
@@ -116,48 +166,17 @@ function UpdateDependencies
     $extensions = Get-ChildItem $(Join-Path $(Join-Path $INSTALL_DIR_ROOT 'text-generation-webui') 'extensions') -Include 'requirements.txt' -File -Recurse -Depth 1
     $extensions.where({$_.Directory.Name -ne 'superbooga'}).foreach({. {python -m pip install -r $_.FullName --upgrade} | Out-Default})
 
-    # The following dependencies are for CUDA, not CPU
-    $torchVersion = (python -m pip show torch).where({$_ -match 'Version:'}).split()[-1]
-    if ($torchVersion -notmatch '\+cu') {return}
-
-    # Install llama-cpp-python built with cuBLAS support for NVIDIA GPU acceleration  No wheels available for ARM
-    if ((Get-Content 'requirements.txt' -raw) -match '(?<=llama-cpp-python==)\d+(?:\.\d+)*' -and !$IsArm) {python -m pip install ('llama-cpp-python=={0}' -f $Matches[0]) --force-reinstall --no-deps --index-url 'https://jllllll.github.io/llama-cpp-python-cuBLAS-wheels/AVX2/cu117'}
-
     New-Item 'repositories' -ItemType 'Directory' -ErrorAction SilentlyContinue > $null
 
     Set-Location 'repositories'
 
-    # Install or update exllama as needed
+    # Download or update exllama as needed
     if (!(Test-Path $(Join-Path $(Resolve-Path '.') 'exllama'))) {git clone 'https://github.com/turboderp/exllama.git'}
     else {Push-Location 'exllama' -ErrorAction Stop; git pull; Pop-Location}
     
     # Fix build issue with exllama in Linux/WSL
     if ($IsLinux -and !(Test-Path $(Join-Path $INSTALL_ENV_DIR 'lib64'))) {ln -s "$INSTALL_ENV_DIR/lib" "$INSTALL_ENV_DIR/lib64"}
-
-    # Install or update GPTQ-for-LLaMa as needed
-    if (!(Test-Path $(Join-Path $(Resolve-Path '.') 'GPTQ-for-LLaMa'))) {git clone 'https://github.com/oobabooga/GPTQ-for-LLaMa.git' -b 'cuda'; Push-Location 'GPTQ-for-LLaMa' -ErrorAction Stop}
-    else {Push-Location 'GPTQ-for-LLaMa'; git pull}
-    # Compile and install GPTQ-for-LLaMa
-    $sitePackages = python -c "import site`nfor sitedir in site.getsitepackages():`n`tif 'site-packages' in sitedir:`n`t`tprint(sitedir);break"
-    if ($LASTEXITCODE -ne 0 -or $sitePackages -in $null,'') {Write-Error 'Could not find the path to your Python packages!'; pause; Exit-PSSession}
-    $gptqInstallPath = Join-Path $sitePackages 'quant_cuda*'
-    if (!(Test-Path $gptqInstallPath))
-    {
-        Copy-Item 'setup_cuda.py' 'setup.py' -Force
-        python -m pip install .
-    }
-    Pop-Location
-    if (!(Test-Path $gptqInstallPath))
-    {
-        if ($IsArm -or $IsMacOS) {Write-Error "ERROR: GPTQ CUDA kernel compilation failed.`n       You will not be able to use GPTQ-based models."}
-        else {
-            PrintBigMessage "WARNING: GPTQ-for-LLaMa compilation failed, but this is FINE and can be ignored!`nThe installer will proceed to install a pre-compiled wheel."
-            if ($IsOnWindows) {python -m pip install 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/main/quant_cuda-0.0.0-cp310-cp310-win_amd64.whl'}
-            elseif ($IsLinux) {python -m pip install 'https://github.com/jllllll/GPTQ-for-LLaMa-Wheels/raw/Linux-x64/quant_cuda-0.0.0-cp310-cp310-linux_x86_64.whl'}
-            if ($LASTEXITCODE -eq 0) {Write-Output "`nWheel installation success!"}
-            else {PrintBigMessage "ERROR: GPTQ wheel installation failed.`n       You will not be able to use GPTQ-based models." 'Red'}
-        }
-    }
+	
     Set-Location $INSTALL_DIR_ROOT
 }
 
