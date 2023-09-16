@@ -69,16 +69,16 @@ echo %modelchoice%| findstr /C:"--branch=" >nul && (
   for /F "delims=" %%a in ("%tempvar%") do set "modelbranch=%%a"
   set "tempvar="
 )
-for /F "tokens=1,2 delims=/" %%a in ("%modelchoice:\=/%") do (
+for /F "tokens=1,2* delims=/ " %%a in ("%modelchoice:\=/%") do (
   set "linklistcmd=python -c "exec^(\"import importlib\nlinks ^= importlib.import_module^('download-model'^).ModelDownloader^(^).get_download_links_from_huggingface^('%%a/%%b'^, '%modelbranch%'^)\nfor link in links[0]: print^(link^)\"^)""
 )
 echo %modelchoice:\=/%| findstr /C:"/tree/" >nul && for /F "tokens=3,4,6* delims=/ " %%a in ("%modelchoice:\=/%") do (
-  set "modeldlcmd=python download-model.py %%a/%%b --branch=%%c%%d"
+  set "modeldlcmd=python download-model.py %%a/%%b --branch=%%c %%d"
   set "modelbranch=%%c"
   set "linklistcmd=python -c "exec^(\"import importlib\nlinks ^= importlib.import_module^('download-model'^).ModelDownloader^(^).get_download_links_from_huggingface^('%%a/%%b'^, '%%c'^)\nfor link in links[0]: print^(link^)\"^)""
 )
-echo %modelchoice:*/tree/=%| findstr /C:"huggingface.co/" >nul && for /F "tokens=3,4* delims=/ " %%a in ("%modelchoice:\=/%") do (
-  set "modeldlcmd=python download-model.py %%a/%%b%%c"
+if "%modelchoice%" == "%modelchoice:*/tree/=%" echo %modelchoice%| findstr /C:"huggingface.co/" >nul && for /F "tokens=3,4* delims=/ " %%a in ("%modelchoice%") do (
+  set "modeldlcmd=python download-model.py %%a/%%b %%c"
   set "linklistcmd=python -c "exec^(\"import importlib\nlinks ^= importlib.import_module^('download-model'^).ModelDownloader^(^).get_download_links_from_huggingface^('%%a/%%b'^, '%modelbranch%'^)\nfor link in links[0]: print^(link^)\"^)""
 )
 echo.
